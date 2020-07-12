@@ -1,4 +1,6 @@
-package my.spring.demo01.configuration;
+package my.spring.demo01.config;
+
+import java.util.Arrays;
 
 import org.springframework.boot.web.embedded.tomcat.TomcatServletWebServerFactory;
 import org.springframework.boot.web.server.ErrorPage;
@@ -6,6 +8,7 @@ import org.springframework.boot.web.server.WebServerFactoryCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatus.Series;
 import org.springframework.web.servlet.config.annotation.ViewControllerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -14,27 +17,31 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
 	@Override
 	public void addViewControllers(ViewControllerRegistry registry) {
-		//Map "/"
+		
+		// 루트 맵핑
 		registry.addViewController("/").setViewName("forward:/index.html");
 		
-		// Map "/Word", "/Word/word", and "/Word/word/Word" - except for anything starting with "/api/..." or ending with
-        // a file extension like ".js" - to index.html. By doing this, the client receives and routes the url. It also
-        // allows client-side URLs to be bookmarked.
-		
-		// Single directory level - no need to exclude "api"
-//		registry.addViewController("/{x:[\\w\\s]+}").setViewName("forward:/index.html");
-		
-		// Multi-level directory path, need to exclude "api" on the first part of the path
+		// /api로 시작하는 않으면 index.html로 forward
 		registry.addViewController("/{x:^(?!api$).*$}/**/{y:[\\w\\-]+}").setViewName("forward:/index.html");
 		
 		//error
-		registry.addViewController("/notFound").setViewName("forward:/index.html");
+		registry.addViewController("/not-found").setViewName("forward:/index.html");
 	}
 	
 	@Bean
 	public WebServerFactoryCustomizer<TomcatServletWebServerFactory> containerCustomizer() {
 		 return container -> {
-            container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/notFound"));
+//            container.addErrorPages(new ErrorPage(HttpStatus.NOT_FOUND, "/not-found"));
+            
+            Arrays.asList(HttpStatus.values()).forEach(status -> {
+            	Series series = Series.valueOf(status);
+            	
+            	System.out.println(status.toString() + " : " + series.toString());
+            	
+            	container.addErrorPages(new ErrorPage(status, "/not-found"));
+            });
+            
+//            container.addErrorPages(new ErrorPage(HttpStatus.Series.CLIENT_ERROR, "/not-found"));
         };
 	}
 }
